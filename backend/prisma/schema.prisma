@@ -1,0 +1,174 @@
+// SQLite for local development. For PostgreSQL deployment change the provider
+// to "postgresql" (string-typed role/status/icon can then become enums).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique // lowercase, 3-20 chars [a-z0-9_]
+  fullName     String
+  role         String    @default("user") // "user" | "superadmin"
+  passwordHash String // scrypt$<salt>$<hash>
+  blocked      Boolean   @default(false) // blocked users cannot log in; their eʼlonlar leave the catalog
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+  listings     Listing[]
+
+  rentalRequests      RentalRequest[]
+  favorites           Favorite[]
+  notifications       Notification[]
+  uploads             Upload[]
+  messages            Message[]
+  renterConversations Conversation[]  @relation("renter")
+  ownerConversations  Conversation[]  @relation("owner")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // sha256 of the token; the raw token is never stored
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+}
+
+/// An eʼlon: a tool offered for daily rent. The 6 task tools (A01..A06) are
+/// seeded as approved listings owned by the superadmin; user listings get E001...
+/// Mapped onto the original "Tool" table so the upgrade migration keeps existing rows.
+model Listing {
+  id           String    @id
+  title        String    @map("name")
+  description  String
+  details      String? // longer description for the detail page
+  phone        String? // owner contact, shown to logged-in users only
+  pricePerDay  Int // in so'm, integer
+  icon         String    @default("box") // drill | ladder | projector | mic | sewing | vacuum | box
+  status       String    @default("approved") // pending | approved | rejected
+  rejectReason String?
+  paused       Boolean   @default(false) // owner hid it temporarily
+  hidden       Boolean   @default(false) // superadmin hid it
+  deletedAt    DateTime? // soft delete keeps rental history intact
+  owner        User?     @relation(fields: [ownerId], references: [id])
+  ownerId      String?
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  requests      RentalRequest[]
+  photos        ListingPhoto[]
+  favorites     Favorite[]
+  conversations Conversation[]
+
+  @@index([status])
+  @@index([ownerId])
+  @@map("Tool")
+}
+
+model ListingPhoto {
+  id        String  @id @default(cuid())
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+  upload    Upload  @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  uploadId  String
+  position  Int
+
+  @@index([listingId])
+}
+
+/// An uploaded image file (stored on disk under UPLOAD_DIR).
+model Upload {
+  id        String         @id @default(cuid())
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  filename  String         @unique
+  mime      String
+  size      Int
+  createdAt DateTime       @default(now())
+  photos    ListingPhoto[]
+}
+
+model RentalRequest {
+  id           String   @id @default(cuid())
+  listing      Listing  @relation(fields: [toolId], references: [id])
+  toolId       String
+  toolName     String // snapshot at request time
+  days         Int
+  pricePerDay  Int // snapshot at request time
+  total        Int // days * pricePerDay, computed on the server
+  customerName String
+  customerPhone String? // "+998 XX XXX XX XX"; required for new requests, null on old rows
+  startDate    String? // YYYY-MM-DD, optional
+  endDate      String? // startDate + days - 1
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId       String? // set when the renter was logged in
+  status       String   @default("CONFIRMED")
+  createdAt    DateTime @default(now())
+
+  @@index([toolId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model Favorite {
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+  createdAt DateTime @default(now())
+
+  @@id([userId, listingId])
+}
+
+/// In-site notification. `type` + `data` (JSON) are rendered by the client in its own language.
+model Notification {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String // listing_approved | listing_rejected | listing_hidden | rental_request
+  data      String // JSON
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+/// Chat between a renter and an eʼlon owner, one thread per (eʼlon, renter).
+model Conversation {
+  id               String    @id @default(cuid())
+  listing          Listing   @relation(fields: [listingId], references: [id])
+  listingId        String
+  renter           User      @relation("renter", fields: [renterId], references: [id], onDelete: Cascade)
+  renterId         String
+  owner            User      @relation("owner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          String
+  renterLastReadAt DateTime?
+  ownerLastReadAt  DateTime?
+  lastMessageAt    DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  messages         Message[]
+
+  @@unique([listingId, renterId])
+  @@index([ownerId])
+  @@index([renterId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderId       String
+  body           String
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}

@@ -1,0 +1,1496 @@
+@import "tailwindcss";
+
+/* =====================================================================
+   Asbob-uskunalar ijarasi: cool ink + one cyan accent
+   Type: Archivo Black over Asap. Corners 4px, buttons fully round.
+   ===================================================================== */
+
+@theme {
+  --color-paper: #f6f9fb;     /* page ground */
+  --color-wall: #e1e9ef;      /* surface, one clear step from the ground */
+  --color-hole: #cdd9e2;
+  --color-ink: #0b1a2b;       /* deep navy ink */
+  --color-muted: #536373;
+  --color-line: #cad6df;      /* only on real form fields and tables */
+  --color-tag: #d3dfe8;
+  --color-tag-edge: #9db3c3;
+  --color-accent: #22c1d6;    /* the single accent, cool cyan */
+  --color-stamp: #b42318;     /* errors only */
+  --color-danger: #b42318;
+  --color-ok: #17715a;
+
+  --font-display: var(--font-archivo), "Arial Black", sans-serif;
+  --font-sans: var(--font-asap), system-ui, sans-serif;
+  --font-mono: var(--font-asap), system-ui, sans-serif;
+
+  --text-small: 0.8125rem;
+  --text-lead: clamp(1.198rem, 0.719rem + 0.59vw, 1.331rem);
+  --text-sub: clamp(1.6rem, 0.96rem + 1vw, 2rem);
+  --text-head: clamp(2rem, 1.2rem + 1.57vw, 2.825rem);
+  --text-display: clamp(2.26rem, 0.6rem + 4.6vw, 5.5rem);
+}
+
+:root {
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius: 4px;
+  --margin: clamp(1.25rem, 3vw, 3rem);
+  --section-gap: clamp(6rem, 9vh + 5vw, 11.25rem);
+  --bar-h: 64px;
+  --bar-top: 16px;
+}
+
+/*
+ * Everything below lives in the components layer, so Tailwind utilities
+ * (hidden, md:hidden, mt-8, …) always win over these classes.
+ */
+@layer components {
+
+html {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* Archivo Black has one weight: never let the browser fake another */
+.font-display {
+  font-weight: 400 !important;
+  text-transform: none !important;
+  letter-spacing: -0.017em;
+  line-height: 0.95;
+}
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+.on-ink :focus-visible {
+  outline-color: var(--color-accent);
+}
+
+.wrap {
+  width: 100%;
+  max-width: 90rem;
+  margin-inline: auto;
+  padding-inline: var(--margin);
+}
+
+.section {
+  padding-block: calc(var(--section-gap) / 2);
+}
+
+/* ---------- surfaces kept from the old pages, now flat ---------- */
+.pegboard {
+  background: var(--color-wall);
+}
+
+.stamp {
+  display: inline-block;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  border-radius: var(--radius);
+  padding: 0.15em 0.55em;
+  font-weight: 600;
+}
+
+.receipt {
+  background: var(--color-paper);
+  border-radius: var(--radius);
+}
+
+.leader {
+  flex: 1;
+  min-width: 1rem;
+}
+
+/* =====================================================================
+   Buttons: wipe-fill. Surface at rest, the accent wipes in from the left.
+   ===================================================================== */
+.btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 52px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: var(--color-wall);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 200ms var(--ease);
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 300ms var(--ease);
+}
+.btn:hover::before,
+.btn:focus-visible::before {
+  transform: scaleX(1);
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn .arrow {
+  display: inline-block;
+  transition: transform 300ms var(--ease);
+}
+.btn:hover .arrow {
+  transform: translateX(5px);
+}
+.btn-sm {
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 0.9375rem;
+}
+.btn-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+.btn-ink:hover,
+.btn-ink:focus-visible {
+  color: var(--color-ink);
+}
+.btn-on-ink {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.btn:disabled::before {
+  display: none;
+}
+
+/* text link with a sliding underline */
+.link-u {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 2px;
+}
+.link-u::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms var(--ease);
+}
+.link-u:hover::after,
+.link-u:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* =====================================================================
+   Navigation: contained bar, fixed, opaque
+   ===================================================================== */
+.nav {
+  position: fixed;
+  z-index: 50;
+  top: var(--bar-top);
+  left: var(--margin);
+  right: var(--margin);
+  max-width: calc(90rem - 2 * var(--margin));
+  margin-inline: auto;
+}
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--bar-h);
+  padding: 0 12px 0 20px;
+  background: var(--color-wall);
+  border-radius: var(--radius);
+}
+.nav-link {
+  position: relative;
+  white-space: nowrap;
+  padding: 10px 12px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  transition: color 200ms var(--ease);
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 2px;
+  background: var(--color-ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms var(--ease);
+}
+.nav-link:hover,
+.nav-link[aria-current="page"] {
+  color: var(--color-ink);
+}
+.nav-link:hover::after,
+.nav-link[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+.nav-menu {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--color-wall);
+  border-radius: var(--radius);
+  animation: menu-in 250ms var(--ease) both;
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.page-top {
+  padding-top: calc(var(--bar-top) + var(--bar-h) + 24px);
+}
+
+/* wordmark */
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.mark-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  transition: transform 400ms var(--ease);
+}
+.mark:hover .mark-dot {
+  transform: scale(1.6);
+}
+
+/* =====================================================================
+   Hero: three flat blocks, a headline that crosses their edges
+   ===================================================================== */
+.hero {
+  --sx: 62%;
+  --sy: 55%;
+  /* text anchors to the resting edge, not the pointer-drifting one */
+  --edge: 52%;
+  --line: calc(0.98 * var(--text-display));
+  position: relative;
+  min-height: max(100svh, 720px);
+  overflow: hidden;
+  background: var(--color-paper);
+  margin-top: calc(-1 * (var(--bar-top) + var(--bar-h) + 24px));
+}
+.hero-b {
+  position: absolute;
+}
+.hero-b1 {
+  left: 0;
+  top: 0;
+  width: var(--sx);
+  height: var(--sy);
+  background: var(--color-paper);
+}
+.hero-b2 {
+  left: 0;
+  top: var(--sy);
+  width: var(--sx);
+  bottom: 0;
+  background: var(--color-wall);
+}
+.hero-b3 {
+  left: var(--sx);
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-ink);
+}
+.hero-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.hero-layer.ink-copy {
+  clip-path: inset(0 calc(100% - var(--sx)) 0 0);
+}
+.hero-layer.light-copy {
+  clip-path: inset(0 0 0 var(--sx));
+}
+/* first line sits on the light block, second line crosses into the grey one */
+.hero-layer-inner {
+  position: absolute;
+  left: var(--margin);
+  right: var(--margin);
+  top: calc(var(--edge) - var(--line));
+}
+.hero-title {
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  color: var(--color-ink);
+  margin: 0;
+}
+.light-copy .hero-title {
+  color: var(--color-paper);
+}
+.hero-title .line {
+  display: block;
+  position: relative;
+  width: max-content;
+  overflow: hidden;
+  padding-bottom: 0.06em;
+}
+/* line blocks: a solid block as long as the words slides off to the end */
+.js .hero-title .line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--color-accent);
+  transform-origin: right center;
+  animation: block-off 850ms var(--ease) calc(250ms + var(--i) * 200ms) both;
+}
+@keyframes block-off {
+  0% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+  45% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+  46% {
+    transform-origin: right center;
+  }
+  100% {
+    transform: scaleX(0);
+    transform-origin: right center;
+  }
+}
+.hero-text {
+  position: absolute;
+  left: var(--margin);
+  top: calc(var(--edge) + var(--line) + clamp(24px, 3vh, 40px));
+  width: min(calc(62% - 2 * var(--margin)), 34rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 24px;
+}
+.hero-lead {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: var(--text-lead);
+  line-height: 1.4;
+  color: var(--color-ink);
+}
+/*
+ * Live price example in the ink block, split by the headline:
+ * the sum above the headline's band, the total below it.
+ * Both follow the block edge (--sx) as it drifts with the pointer.
+ */
+.hero-calc-top,
+.hero-calc-bottom {
+  position: absolute;
+  left: calc(var(--sx) + var(--margin));
+  right: var(--margin);
+  color: var(--color-paper);
+}
+.hero-calc-top {
+  bottom: calc(100% - var(--edge) + var(--line) + 28px);
+}
+.hero-calc-bottom {
+  top: calc(var(--edge) + var(--line) + clamp(24px, 3vh, 40px));
+  max-width: 30rem;
+}
+.hero-calc-top p,
+.hero-calc-bottom p {
+  margin: 0;
+}
+.hero-calc-label {
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+.hero-calc-days {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+.hero-calc-days button {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  border: 1.5px solid color-mix(in srgb, currentColor 35%, transparent);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition:
+    background-color 250ms var(--ease),
+    border-color 250ms var(--ease),
+    color 250ms var(--ease);
+}
+.hero-calc-days button:hover {
+  border-color: var(--color-accent);
+}
+.hero-calc-days button.on {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+}
+.hero-calc-line {
+  margin-top: 18px !important;
+  font-size: var(--text-head);
+  white-space: nowrap;
+}
+.hero-calc-result {
+  font-size: clamp(2.6rem, 1rem + 3.4vw, 4.5rem);
+  line-height: 0.95;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.hero-calc-unit {
+  font-size: 0.45em;
+  color: var(--color-paper);
+}
+.hero-calc-desc {
+  margin-top: 16px !important;
+  max-width: 34ch;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+.hero-calc-result-sm {
+  margin-top: 6px !important;
+  font-size: var(--text-sub);
+  color: #0793a8; /* deep end of the accent, readable on the light band */
+  white-space: nowrap;
+}
+/* the changing figure drops in */
+.hero-calc-tick {
+  display: inline-block;
+  animation: tick 380ms var(--ease) both;
+}
+@keyframes tick {
+  from {
+    opacity: 0;
+    transform: translateY(-0.25em);
+  }
+}
+.rise {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: rise 900ms var(--ease) var(--d, 900ms) both;
+}
+@keyframes rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Phones: three stacked bands, each holding something.
+ *   light  0–45%   formula under the menu, headline line 1
+ *   grey  45–58%   headline line 2 (the crossing)
+ *   ink   58–100%  lead text and button
+ */
+@media (max-width: 767px) {
+  .hero {
+    --sx: 100%;
+    --m1: 45%;
+    --m2: 58%;
+    --fs: clamp(1.45rem, 6.5vw, 2.4rem);
+    min-height: max(600px, 78svh);
+  }
+  .hero-b1 {
+    width: 100%;
+    height: var(--m1);
+  }
+  .hero-b2 {
+    width: 100%;
+    top: var(--m1);
+    height: calc(var(--m2) - var(--m1));
+    bottom: auto;
+  }
+  .hero-b3 {
+    left: 0;
+    top: var(--m2);
+    width: 100%;
+    height: auto;
+  }
+  .hero-layer.ink-copy {
+    clip-path: inset(0 0 calc(100% - var(--m2)) 0);
+  }
+  .hero-layer.light-copy {
+    clip-path: inset(var(--m2) 0 0 0);
+  }
+  .hero-layer-inner {
+    top: calc(var(--m1) - 0.98 * var(--fs));
+  }
+  .hero-title {
+    font-size: var(--fs);
+  }
+  .hero-text {
+    top: calc(var(--m2) + 28px);
+    width: calc(100% - 2 * var(--margin));
+    color: var(--color-paper);
+    gap: 14px;
+  }
+  .hero-lead {
+    color: var(--color-paper);
+    font-size: 1.05rem;
+  }
+  /* the button sits on the ink band here: use the on-ink button */
+  .hero-text .btn-ink {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+  .hero-calc-top {
+    left: var(--margin);
+    top: calc(var(--bar-top) + var(--bar-h) + 24px);
+    bottom: auto;
+    color: var(--color-ink);
+  }
+  .hero-calc-line {
+    margin-top: 12px !important;
+    font-size: var(--text-sub);
+  }
+  .hero-calc-days {
+    margin-top: 10px;
+  }
+  .hero-calc-days button {
+    width: 32px;
+    height: 32px;
+  }
+  /* calc needs more room on the light band: push the crossing line down */
+  .hero {
+    --m1: 50%;
+    --m2: 62%;
+    min-height: max(660px, 82svh);
+  }
+}
+
+/* =====================================================================
+   How it works: three step cards dealt in order, joined by a track
+   ===================================================================== */
+.steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* the track: shows in the gaps between cards, fills left to right */
+.steps::before,
+.steps::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 46px;
+  height: 2px;
+  background: var(--color-line);
+}
+.steps::after {
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 1400ms var(--ease) 300ms;
+}
+.steps.is-in::after {
+  transform: scaleX(1);
+}
+.step-slot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+}
+.js .steps:not(.is-in) .step-slot {
+  opacity: 0;
+}
+.steps.is-in .step-slot {
+  animation: step-in 800ms var(--ease) calc(var(--i) * 160ms) both;
+}
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(56px) rotate(-3deg) scale(0.96);
+  }
+}
+
+.step {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  padding: 32px;
+  border-radius: var(--radius);
+  background: var(--color-wall);
+  color: var(--color-ink);
+  transition:
+    transform 450ms var(--ease),
+    box-shadow 450ms var(--ease);
+}
+.step-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+/* accent bar wipes across the top on hover */
+.step::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: var(--color-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 450ms var(--ease);
+}
+.step:hover {
+  transform: translateY(-10px) rotate(-1deg);
+  box-shadow: 0 24px 40px -24px rgb(11 26 43 / 0.45);
+}
+.step-slot:nth-child(2) .step:hover {
+  transform: translateY(-10px) rotate(1deg);
+}
+.step:hover::before {
+  transform: scaleX(1);
+}
+
+/* the big step number: a watermark that lights up */
+.step-num {
+  position: absolute;
+  z-index: -1;
+  top: 6px;
+  right: 18px;
+  font-size: clamp(5.5rem, 3rem + 5vw, 8.5rem);
+  line-height: 1;
+  opacity: 0.12;
+  transition:
+    opacity 450ms var(--ease),
+    color 450ms var(--ease),
+    transform 450ms var(--ease);
+}
+.step:hover .step-num {
+  opacity: 1;
+  color: var(--color-accent);
+  transform: translateY(-6px) scale(1.04);
+}
+.step-kicker {
+  margin: 0;
+  font-size: var(--text-small);
+  font-weight: 600;
+  opacity: 0.7;
+}
+.step-title {
+  margin: 10px 0 0;
+  max-width: 11ch;
+  font-size: var(--text-sub);
+}
+.step-rows {
+  margin: auto 0 0;
+  padding: 32px 0 0;
+  list-style: none;
+}
+.step-rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  transition: transform 300ms var(--ease);
+}
+.step-rows li:hover {
+  transform: translateX(4px);
+}
+.step-time {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 300ms var(--ease),
+    color 300ms var(--ease);
+}
+.step:hover .step-time {
+  background: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* =====================================================================
+   Rental form: success
+   ===================================================================== */
+.rent-ok {
+  padding: 28px;
+  border-radius: var(--radius);
+  background: #fff;
+  border: 2px solid var(--color-ok);
+  box-shadow: 0 20px 40px -28px rgb(23 113 90 / 0.6);
+  outline: none;
+  animation: rent-ok-in 500ms var(--ease) both;
+}
+@keyframes rent-ok-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+.rent-ok p {
+  margin: 0;
+}
+.rent-ok-check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--color-ok);
+  color: #fff;
+  animation: rent-ok-pop 600ms var(--ease) 150ms both;
+}
+@keyframes rent-ok-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+  }
+}
+.rent-ok-rows {
+  margin: 22px 0 0;
+  border-top: 1px solid var(--color-line);
+}
+.rent-ok-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.rent-ok-rows dt {
+  color: var(--color-muted);
+}
+.rent-ok-rows dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rent-ok,
+  .rent-ok-check {
+    animation: none;
+  }
+}
+
+/* =====================================================================
+   Cabinet: rental requests
+   ===================================================================== */
+.req-stat {
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: var(--color-wall);
+}
+.req-stat p {
+  margin: 0;
+}
+.req-card {
+  list-style: none;
+  padding: 22px 24px;
+  border-radius: var(--radius);
+  background: #fff;
+  border: 2px solid var(--color-wall);
+  transition:
+    border-color 300ms var(--ease),
+    transform 300ms var(--ease);
+}
+.req-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+/* the outcome strip unrolls after the cards land */
+.steps-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+  min-height: 68px;
+  margin: 28px 0 0;
+  padding: 14px 28px;
+  border-radius: var(--radius);
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-weight: 600;
+  transition: clip-path 900ms var(--ease) 500ms;
+}
+.steps-total .font-display {
+  color: var(--color-accent);
+  font-size: var(--text-sub);
+}
+.js .steps-total:not(.is-in) {
+  clip-path: inset(0 100% 0 0);
+}
+.steps-total.is-in {
+  clip-path: inset(0 0 0 0);
+}
+
+@media (max-width: 767px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+  /* vertical track on phones */
+  .steps::before,
+  .steps::after {
+    top: 0;
+    bottom: 0;
+    left: 40px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+  .steps::after {
+    transform: scaleY(0);
+    transform-origin: center top;
+  }
+  .steps.is-in::after {
+    transform: scaleY(1);
+  }
+  .step {
+    min-height: 0;
+    padding: 26px;
+  }
+}
+
+/* =====================================================================
+   Deck: cards dealt onto the table
+   ===================================================================== */
+.deck {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+  padding: 24px 0;
+}
+@media (max-width: 1023px) {
+  .deck {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 639px) {
+  .deck {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+.deal {
+  display: block;
+  height: 100%;
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 450ms var(--ease);
+}
+@media (max-width: 639px) {
+  .deal {
+    transform: rotate(calc(var(--tilt, 0deg) / 3));
+  }
+}
+.deal-hover:hover,
+.deal-hover:focus-within {
+  transform: rotate(0deg) translateY(-8px);
+}
+/* stretched link: the title's link covers the whole card */
+.deal-link {
+  color: inherit;
+  outline: none;
+}
+.deal-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius);
+}
+.deal-link:focus-visible::after {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.js .deck:not(.dealt) .deal {
+  opacity: 0;
+}
+.deck.dealt .deal {
+  animation: deal 900ms var(--ease) calc(var(--i) * 90ms) backwards;
+}
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translate(var(--fx, 0), var(--fy, 0)) rotate(0deg) scale(0.9);
+  }
+  25% {
+    opacity: 1;
+  }
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 260px;
+  padding: 28px;
+  border-radius: var(--radius);
+  background: var(--color-wall);
+  color: var(--color-ink);
+}
+.card-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+.card .btn {
+  min-height: 44px;
+  padding: 0 20px;
+}
+/* buttons need a ground that differs from their card */
+.card .btn,
+.card-ink .btn {
+  background: var(--color-paper);
+}
+.deal-hover:hover .btn::before {
+  transform: scaleX(1);
+}
+.deal-hover:hover .btn .arrow {
+  transform: translateX(5px);
+}
+
+/* =====================================================================
+   Photo carousel
+   ===================================================================== */
+.card {
+  position: relative;
+}
+.card-media {
+  margin-bottom: 20px;
+}
+.car-view {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  background: var(--color-paper);
+  touch-action: pan-y;
+}
+.car-view:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.car-track {
+  display: flex;
+  height: 100%;
+  transition: transform 500ms var(--ease);
+}
+.car-track img {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+}
+.car-large .car-view {
+  aspect-ratio: 4 / 3;
+  cursor: grab;
+}
+.car-large .car-view:active {
+  cursor: grabbing;
+}
+/* empty state: the tool's icon */
+.car-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.car-empty.on-ink-empty {
+  background: color-mix(in srgb, var(--color-paper) 9%, transparent);
+  color: var(--color-paper);
+}
+/* controls sit above the card's stretched link */
+.car-btn,
+.car-dots,
+.car-count {
+  position: absolute;
+  z-index: 2;
+}
+.car-btn {
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border-radius: 999px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 16px -8px rgb(11 26 43 / 0.5);
+  transition:
+    opacity 250ms var(--ease),
+    transform 250ms var(--ease),
+    background-color 250ms var(--ease);
+}
+.car-btn:hover {
+  background: var(--color-accent);
+}
+.car-prev {
+  left: 10px;
+}
+.car-next {
+  right: 10px;
+}
+.car-dots {
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+.car-dots button {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 999px;
+  background: rgb(246 249 251 / 0.6);
+  cursor: pointer;
+  transition:
+    width 300ms var(--ease),
+    background-color 300ms var(--ease);
+}
+.car-dots button[aria-current="true"] {
+  width: 22px;
+  background: var(--color-accent);
+}
+.car-count {
+  top: 10px;
+  right: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(11 26 43 / 0.7);
+  color: var(--color-paper);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+/* on cards the arrows appear on hover / keyboard focus (always on touch screens) */
+@media (hover: hover) {
+  .car-card .car-btn {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  .deal:hover .car-card .car-btn,
+  .car-card:focus-within .car-btn {
+    opacity: 1;
+    transform: none;
+  }
+}
+.car-card .car-btn {
+  width: 34px;
+  height: 34px;
+  margin-top: -17px;
+  font-size: 1.35rem;
+}
+.car-thumbs {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.car-thumbs button {
+  width: 76px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  opacity: 0.65;
+  cursor: pointer;
+  transition:
+    opacity 250ms var(--ease),
+    border-color 250ms var(--ease);
+}
+.car-thumbs button:hover,
+.car-thumbs button[aria-current="true"] {
+  opacity: 1;
+}
+.car-thumbs button[aria-current="true"] {
+  border-color: var(--color-accent);
+}
+.car-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* =====================================================================
+   Photo uploader (eʼlon form)
+   ===================================================================== */
+.uploader {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (max-width: 480px) {
+  .uploader {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.up-tile {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius);
+  background: var(--color-wall);
+  animation: rise 400ms var(--ease) both;
+}
+.up-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.up-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.up-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  background: rgb(11 26 43 / 0.62);
+  color: var(--color-paper);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+.up-tile.is-error .up-state {
+  background: rgb(180 35 24 / 0.82);
+}
+.up-spin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 800ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.up-retry {
+  text-decoration: underline;
+  cursor: pointer;
+}
+.up-actions {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 200ms var(--ease);
+}
+.up-tile:hover .up-actions,
+.up-tile:focus-within .up-actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .up-actions {
+    opacity: 1;
+  }
+}
+.up-actions button {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.up-actions .up-remove {
+  width: 28px;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.up-actions button:hover {
+  background: var(--color-accent);
+}
+.up-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  aspect-ratio: 4 / 3;
+  padding: 8px;
+  border: 2px dashed var(--color-tag-edge);
+  border-radius: var(--radius);
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 200ms var(--ease),
+    background-color 200ms var(--ease);
+}
+.up-drop:hover,
+.up-drop.is-over {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, #fff);
+}
+.up-drop:has(:focus-visible) {
+  outline: 3px solid var(--color-ink);
+  outline-offset: 3px;
+}
+.up-drop.is-invalid {
+  border-color: var(--color-stamp);
+}
+.up-plus {
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--color-ink);
+}
+
+/* =====================================================================
+   Rolling figures
+   ===================================================================== */
+.roll {
+  display: inline-flex;
+  overflow: hidden;
+  height: 1em;
+  line-height: 1;
+  vertical-align: bottom;
+}
+.roll-col {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+}
+.roll-strip {
+  display: flex;
+  flex-direction: column;
+  transform: translateY(0);
+  transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1) calc(var(--c) * 70ms);
+}
+.roll-strip span {
+  display: block;
+  height: 1em;
+  line-height: 1;
+}
+.roll.go .roll-strip {
+  transform: translateY(calc(var(--d) * -1em));
+}
+.roll-fixed {
+  display: inline-block;
+  height: 1em;
+  line-height: 1;
+}
+
+/* =====================================================================
+   Scroll moves
+   ===================================================================== */
+/* rows step in: from 40% to full, in reading order, once */
+.js [data-rows] > * {
+  opacity: 0.4;
+  transition: opacity 600ms var(--ease) calc(min(var(--i, 0), 3) * 60ms);
+}
+.js [data-rows].is-in > * {
+  opacity: 1;
+}
+
+/* colour wave through a heading */
+.wave-ch {
+  transition: color 450ms ease;
+}
+.wave-ch.on {
+  color: var(--color-accent);
+}
+.wave-w {
+  display: inline-block;
+  white-space: nowrap;
+}
+/* the accent is pale on white: the wave uses the deep end of the cyan on light grounds */
+.on-light .wave-ch.on {
+  color: #0793a8;
+}
+
+/* late word slides into its line */
+.late-word {
+  display: inline-block;
+  will-change: transform;
+}
+
+/* =====================================================================
+   Footer
+   ===================================================================== */
+.footer {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.footer a {
+  transition: color 200ms var(--ease);
+}
+.footer a:hover {
+  color: var(--color-accent);
+}
+
+/* =====================================================================
+   Inputs: real form fields keep their borders
+   ===================================================================== */
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+input:hover:not(:focus),
+textarea:hover:not(:focus) {
+  border-color: var(--color-tag-edge);
+}
+
+.hang-in {
+  animation: rise 800ms var(--ease) var(--delay, 0ms) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .hang-in,
+  .rise,
+  .hero-calc-tick,
+  .steps.is-in .step-slot,
+  .hero-title .line::after,
+  .deck.dealt .deal,
+  .nav-menu {
+    animation: none !important;
+  }
+  .rise {
+    opacity: 1;
+    transform: none;
+  }
+  .js .deck:not(.dealt) .deal,
+  .js .steps:not(.is-in) .step-slot {
+    opacity: 1;
+  }
+  .js .steps-total:not(.is-in) {
+    clip-path: none;
+  }
+  .steps::after {
+    transform: none !important;
+    transition: none;
+  }
+  .step,
+  .step::before,
+  .step-num,
+  .step-time,
+  .step-rows li {
+    transition: none;
+  }
+  .js [data-rows] > * {
+    opacity: 1;
+    transition: none;
+  }
+  .roll-strip {
+    transition: none;
+  }
+  .btn,
+  .btn::before,
+  .deal,
+  .car-track {
+    transition: none;
+  }
+  .up-tile {
+    animation: none;
+  }
+  .late-word {
+    transform: none !important;
+  }
+}
+
+.deck > li {
+  display: flex;
+}
+.deck > li > * {
+  width: 100%;
+}
+
+} /* end @layer components */

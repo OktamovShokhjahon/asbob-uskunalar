@@ -1,0 +1,604 @@
+openapi: 3.0.3
+info:
+  title: Asbob-uskunalar ijarasi API
+  version: 2.0.0
+  description: |
+    Tool rental demo API. Totals are always computed on the server:
+    Jami = kunlar soni × kunlik narx. No payment, booking or messaging happens.
+
+    Accounts: register/login return a bearer token; send it as `Authorization: Bearer <token>`.
+    Eʼlonlar (listings): logged-in users post tools for rent; a superadmin approves or rejects them.
+servers:
+  - url: http://localhost:4000/api/v1
+
+tags:
+  - name: Auth
+  - name: Listings
+  - name: Admin
+  - name: Tools
+  - name: Quotes
+  - name: Rentals
+  - name: System
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Create an account and log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterInput" }
+      responses:
+        "201":
+          description: Account created; session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AuthResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [username, password]
+              properties:
+                username: { type: string, example: admin }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Session started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/AuthResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: End the current session
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Logged out }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: The logged-in user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /listings:
+    get:
+      tags: [Listings]
+      summary: Public catalog (approved eʼlonlar; A01–A06 first, then newest)
+      parameters:
+        - { in: query, name: q, required: false, schema: { type: string }, description: Case-insensitive title search }
+      responses:
+        "200":
+          description: Approved listings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Listing" } }
+    post:
+      tags: [Listings]
+      summary: Post an eʼlon (pending review; a superadmin's own eʼlon is approved at once)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ListingInput" }
+      responses:
+        "201":
+          description: Created
+          headers:
+            Location: { schema: { type: string, example: /api/v1/listings/E001 } }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Listing" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /listings/{id}:
+    get:
+      tags: [Listings]
+      summary: One approved listing
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, example: A03 } }
+      responses:
+        "200":
+          description: The listing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Listing" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /me/listings:
+    get:
+      tags: [Listings]
+      summary: My eʼlonlar, every status (kabinet)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Listing" } }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /admin/stats:
+    get:
+      tags: [Admin]
+      summary: Listing counts by status and number of users
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Stats" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/listings:
+    get:
+      tags: [Admin]
+      summary: Listings by status (review queue)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [pending, approved, rejected], default: pending }
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/Listing" } }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/listings/{id}/review:
+    post:
+      tags: [Admin]
+      summary: Approve or reject a pending eʼlon
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: path, name: id, required: true, schema: { type: string, example: E001 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReviewInput" }
+      responses:
+        "200":
+          description: Reviewed listing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Listing" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: All accounts with their eʼlon counts
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: "#/components/schemas/AdminUser" } }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /admin/reset-demo:
+    post:
+      tags: [Admin]
+      summary: Reset demo data (users, user eʼlonlar, rentals, all sessions); re-seed A01–A06
+      description: Disabled in production unless DEMO_RESET_ENABLED=true.
+      security: [{ bearerAuth: [] }]
+      responses:
+        "204": { description: Reset done; every session ended }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /tools:
+    get:
+      tags: [Tools]
+      summary: List all tools
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema: { type: string }
+          description: Case-insensitive search by name
+      responses:
+        "200":
+          description: Tools ordered by id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Tool" }
+
+  /tools/{id}:
+    get:
+      tags: [Tools]
+      summary: Get one tool
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, example: A03 }
+      responses:
+        "200":
+          description: The tool
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Tool" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /quotes:
+    post:
+      tags: [Quotes]
+      summary: Calculate a total without saving
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/QuoteInput" }
+      responses:
+        "200":
+          description: Calculated quote
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Quote" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+
+  /rental-requests:
+    post:
+      tags: [Rentals]
+      summary: Create a rental request ("Ijara soʻrovi")
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema: { type: string, maxLength: 100 }
+          description: Same key within 10 minutes returns the first result instead of creating a new record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RentalInput" }
+      responses:
+        "201":
+          description: Saved and confirmed
+          headers:
+            Location:
+              schema: { type: string, example: /api/v1/rental-requests/clx9k2abc }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Rental" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "415": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/Error" }
+    get:
+      tags: [Rentals]
+      summary: List rental requests (superadmin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { in: query, name: page, schema: { type: integer, minimum: 1, default: 1 } }
+        - { in: query, name: limit, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+      responses:
+        "200":
+          description: Page of requests, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items: { type: array, items: { $ref: "#/components/schemas/Rental" } }
+                      page: { type: integer }
+                      limit: { type: integer }
+                      total: { type: integer }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /rental-requests/{id}:
+    get:
+      tags: [Rentals]
+      summary: Get one rental request (confirmation page)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: The saved request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/Rental" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      responses:
+        "200":
+          description: API and database are up
+          content:
+            application/json:
+              example: { data: { status: ok, db: ok } }
+        "503":
+          description: Database unreachable
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Tool:
+      type: object
+      required: [id, name, description, pricePerDay]
+      properties:
+        id: { type: string, example: A01 }
+        name: { type: string, example: Drel }
+        description: { type: string, example: Teshish ishlari uchun }
+        pricePerDay: { type: integer, example: 30000, description: soʻm }
+        icon: { $ref: "#/components/schemas/IconKind" }
+
+    IconKind:
+      type: string
+      enum: [drill, ladder, projector, mic, sewing, vacuum, box]
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string, example: dilnoza }
+        fullName: { type: string, example: Dilnoza Karimova }
+        role: { type: string, enum: [user, superadmin] }
+        createdAt: { type: string, format: date-time }
+
+    AdminUser:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            listingCount: { type: integer }
+
+    AuthResult:
+      type: object
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        token: { type: string, description: Bearer token; only its hash is stored on the server }
+        expiresAt: { type: string, format: date-time }
+
+    RegisterInput:
+      type: object
+      additionalProperties: false
+      required: [fullName, username, password]
+      properties:
+        fullName: { type: string, minLength: 2, maxLength: 50 }
+        username: { type: string, pattern: "^[a-z0-9_]{3,20}$", description: Stored lowercase }
+        password: { type: string, minLength: 6, maxLength: 100, format: password }
+        password2: { type: string, description: Optional confirmation; must match when sent }
+
+    Listing:
+      type: object
+      properties:
+        id: { type: string, example: E001 }
+        title: { type: string, example: Perforator }
+        description: { type: string, example: Beton teshish uchun }
+        pricePerDay: { type: integer, example: 45000 }
+        icon: { $ref: "#/components/schemas/IconKind" }
+        ownerId: { type: string }
+        ownerUsername: { type: string }
+        ownerName: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        rejectReason: { type: string, description: Only on rejected eʼlonlar with a reason }
+        createdAt: { type: string, format: date-time }
+        reviewedAt: { type: string, format: date-time }
+
+    ListingInput:
+      type: object
+      additionalProperties: false
+      description: Server-owned fields (id, status, owner*, rejectReason, createdAt, reviewedAt) are ignored if sent.
+      required: [title, description, pricePerDay]
+      properties:
+        title: { type: string, minLength: 2, maxLength: 40 }
+        description: { type: string, minLength: 5, maxLength: 80 }
+        pricePerDay: { type: integer, minimum: 1000, maximum: 10000000 }
+        icon: { allOf: [{ $ref: "#/components/schemas/IconKind" }], default: box }
+
+    ReviewInput:
+      type: object
+      additionalProperties: false
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approve, reject] }
+        reason: { type: string, maxLength: 200, description: Shown to the owner when rejected }
+
+    Stats:
+      type: object
+      properties:
+        pending: { type: integer }
+        approved: { type: integer }
+        rejected: { type: integer }
+        users: { type: integer, description: Accounts with role "user" }
+
+    QuoteInput:
+      type: object
+      additionalProperties: false
+      required: [toolId, days]
+      properties:
+        toolId: { type: string, example: A01 }
+        days: { type: integer, minimum: 1, maximum: 7, example: 3 }
+
+    Quote:
+      type: object
+      properties:
+        toolId: { type: string, example: A01 }
+        toolName: { type: string, example: Drel }
+        days: { type: integer, example: 3 }
+        pricePerDay: { type: integer, example: 30000 }
+        total: { type: integer, example: 90000 }
+
+    RentalInput:
+      type: object
+      additionalProperties: false
+      description: Server-owned fields (total, pricePerDay, toolName, status, id, createdAt) are ignored if sent.
+      required: [toolId, days, customerName]
+      properties:
+        toolId: { type: string, example: A03 }
+        days: { type: integer, minimum: 1, maximum: 7, example: 2 }
+        customerName: { type: string, minLength: 1, maxLength: 50, example: Ali }
+
+    Rental:
+      type: object
+      properties:
+        id: { type: string, example: clx9k2abc }
+        toolId: { type: string, example: A03 }
+        toolName: { type: string, example: Proyektor }
+        days: { type: integer, example: 2 }
+        pricePerDay: { type: integer, example: 100000 }
+        total: { type: integer, example: 200000 }
+        customerName: { type: string, example: Ali }
+        status: { type: string, enum: [CONFIRMED] }
+        createdAt: { type: string, format: date-time }
+
+    FieldError:
+      type: object
+      properties:
+        code: { type: string, example: DAYS_OUT_OF_RANGE }
+        message: { type: string, example: Kunlar soni 1 dan 7 gacha boʻlishi kerak }
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - TOOL_NOT_FOUND
+                - REQUEST_NOT_FOUND
+                - LISTING_NOT_FOUND
+                - USERNAME_TAKEN
+                - INVALID_CREDENTIALS
+                - ALREADY_REVIEWED
+                - DEMO_RESET_DISABLED
+                - INVALID_JSON
+                - UNSUPPORTED_MEDIA_TYPE
+                - PAYLOAD_TOO_LARGE
+                - UNAUTHORIZED
+                - FORBIDDEN
+                - NOT_FOUND
+                - RATE_LIMITED
+                - INTERNAL_ERROR
+            message: { type: string }
+            fields:
+              type: object
+              additionalProperties: { $ref: "#/components/schemas/FieldError" }
+
+  responses:
+    Error:
+      description: Error envelope (Uzbek messages)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Maʼlumotlar notoʻgʻri
+              fields:
+                days: { code: DAYS_OUT_OF_RANGE, message: Kunlar soni 1 dan 7 gacha boʻlishi kerak }
+                customerName: { code: NAME_REQUIRED, message: Ismni kiriting }

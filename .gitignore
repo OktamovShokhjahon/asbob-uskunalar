@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env*.local
+.claude/settings.local.json
+backend/public/test-uploads/
+backend/public/uploads/*
+!backend/public/uploads/.gitkeep
