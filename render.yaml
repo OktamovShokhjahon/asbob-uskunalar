@@ -1,0 +1,45 @@
+# Render Blueprint — backend API (backend/ · Express + Prisma + SQLite)
+# Docs: https://render.com/docs/blueprint-spec
+#
+# SQLite and uploaded images live on a persistent disk mounted at /var/data.
+# Persistent disks need a paid instance (plan: starter). On the free plan the
+# filesystem is wiped on every deploy/restart — see DEPLOY.md for that option.
+
+services:
+  - type: web
+    name: asbob-uskunalar-api
+    runtime: node
+    rootDir: backend
+    plan: starter
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    # --include=dev: TypeScript, Prisma CLI and tsx are needed to build and seed.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    # Disk is only mounted at runtime, so migrations + seed run on start.
+    # The seed is idempotent (upserts the superadmin and the 6 starter tools).
+    startCommand: npx prisma migrate deploy && npx prisma db seed && npm start
+    healthCheckPath: /api/v1/health
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/var/data/app.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: TRUST_PROXY
+        value: "1"
+      - key: LOG_LEVEL
+        value: info
+      # Your Vercel URL, e.g. https://asbob-uskunalar.vercel.app (comma-separate several).
+      - key: CORS_ORIGIN
+        sync: false
+      # Password for the "admin" account. Asked once when you create the Blueprint.
+      - key: SUPERADMIN_PASSWORD
+        sync: false

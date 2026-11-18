@@ -21,6 +21,8 @@ const EnvSchema = z.object({
   /** Where uploaded images are written. Relative paths are resolved from the backend folder. */
   UPLOAD_DIR: z.string().default("public/uploads"),
   COOKIE_SECURE: bool,
+  /** Number of reverse proxies in front of the API (Render = 1). Needed for correct client IPs in rate limits. */
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
 });
 
 /** backend/ — from src/config.ts (tsx) and dist/config.js (built) alike. */
